@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stroop Color-Word Test</title>
+  <meta name="description" content="Stroop Color-Word Test untuk mengukur cognitive fatigue melalui interference score.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#mainContent">Lewati ke konten utama</a>
+
+  <main id="mainContent" class="shell" aria-live="polite">
+    <section class="panel" id="setupScreen" aria-labelledby="setupTitle">
+      <p class="eyebrow">Behavioral Assessment</p>
+      <h1 id="setupTitle">Stroop Color-Word Test</h1>
+      <p class="lead">Isi data sesi sebelum memulai. Tes ini mempertahankan logika asli: latihan 6 trial, tes utama 36 trial (12 kongruen, 12 inkongruen, 12 netral).</p>
+
+      <form id="setupForm" novalidate>
+        <label for="pid">ID atau Nama Partisipan</label>
+        <input id="pid" name="pid" type="text" autocomplete="name" required placeholder="mis. P01">
+
+        <div class="grid-2">
+          <div>
+            <label for="day">Hari ke-</label>
+            <input id="day" name="day" type="text" inputmode="numeric" pattern="[0-9]+" required placeholder="mis. 3">
+          </div>
+          <div>
+            <label for="session">Sesi</label>
+            <select id="session" name="session" required>
+              <option value="Pagi">Pagi (baseline)</option>
+              <option value="Sore">Sore (pasca-kerja)</option>
+            </select>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" type="submit">Lanjut ke Instruksi</button>
+      </form>
+
+      <aside class="note" aria-label="Catatan administrasi">
+        <strong>Catatan administrasi:</strong> jalankan tes di tempat tenang, tanpa interupsi, dan gunakan waktu pengukuran yang konsisten untuk menjaga validitas hasil.
+      </aside>
+    </section>
+
+    <section class="panel hidden" id="instructionScreen" aria-labelledby="instructionTitle">
+      <p class="eyebrow">Instruksi</p>
+      <h2 id="instructionTitle">Fokus pada warna cetak, bukan arti kata</h2>
+      <p>
+        Anda akan melihat kata MERAH, BIRU, HIJAU, atau KUNING, dengan warna cetak acak.
+        Jawaban benar adalah <strong>warna cetak</strong>, bukan bacaan kata.
+      </p>
+      <p>
+        Contoh: kata "MERAH" yang dicetak biru dijawab dengan tombol <strong>BIRU</strong>.
+        Jawab secepat dan seakurat mungkin.
+      </p>
+      <p class="kbd-hint">Shortcut keyboard: <kbd>1</kbd> MERAH, <kbd>2</kbd> BIRU, <kbd>3</kbd> HIJAU, <kbd>4</kbd> KUNING.</p>
+      <button class="btn btn-primary" id="startPracticeBtn" type="button">Mulai Latihan (6 Soal)</button>
+    </section>
+
+    <section class="panel hidden" id="testScreen" aria-labelledby="testTitle">
+      <h2 id="testTitle" class="visually-hidden">Sesi Pengujian Stroop</h2>
+
+      <div class="progress-wrap" aria-hidden="true">
+        <div class="progressbar"><div id="progressFill"></div></div>
+      </div>
+
+      <p id="trialCounter" class="counter"></p>
+
+      <div id="stimulusRegion" aria-live="assertive" aria-atomic="true">
+        <div id="fixation" class="fixation hidden">+</div>
+        <div id="stimulus" class="stimulus"></div>
+      </div>
+
+      <div class="choices" role="group" aria-label="Pilihan warna jawaban">
+        <button class="choiceBtn c-merah" data-color="Merah" type="button">MERAH</button>
+        <button class="choiceBtn c-biru" data-color="Biru" type="button">BIRU</button>
+        <button class="choiceBtn c-hijau" data-color="Hijau" type="button">HIJAU</button>
+        <button class="choiceBtn c-kuning" data-color="Kuning" type="button">KUNING</button>
+      </div>
+
+      <p class="status" id="trialStatus" aria-live="polite"></p>
+    </section>
+
+    <section class="panel hidden" id="practiceDoneScreen" aria-labelledby="practiceDoneTitle">
+      <p class="eyebrow">Latihan selesai</p>
+      <h2 id="practiceDoneTitle">Siap masuk tes utama</h2>
+      <p>Tes utama berisi 36 soal dan tetap menggunakan komposisi standar untuk kongruen, inkongruen, dan netral.</p>
+      <button class="btn btn-primary" id="startMainBtn" type="button">Mulai Tes Utama</button>
+    </section>
+
+    <section class="panel hidden" id="resultsScreen" aria-labelledby="resultsTitle">
+      <p class="eyebrow">Hasil</p>
+      <h2 id="resultsTitle">Ringkasan Performa</h2>
+      <p class="result-meta" id="resultMeta"></p>
+
+      <div class="stat-grid">
+        <article class="stat-box">
+          <p class="stat-label">Interference Score (ms)</p>
+          <p class="bigstat" id="interferenceScore">-</p>
+          <p class="mini">RT Inkongruen - RT Kongruen</p>
+        </article>
+        <article class="stat-box">
+          <p class="stat-label">Akurasi Keseluruhan</p>
+          <p class="bigstat" id="accuracyOverall">-</p>
+          <p class="mini">Jawaban benar pada tes utama</p>
+        </article>
+      </div>
+
+      <div class="table-wrap" role="region" aria-label="Tabel hasil per jenis trial" tabindex="0">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Jenis Trial</th>
+              <th scope="col">n</th>
+              <th scope="col">RT Rata-rata (ms)</th>
+              <th scope="col">Akurasi</th>
+            </tr>
+          </thead>
+          <tbody id="resultsTableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="stack-actions">
+        <button class="btn btn-primary" id="saveCsvBtn" type="button">Unduh Data CSV</button>
+        <button class="btn btn-secondary" id="newSessionBtn" type="button">Mulai Sesi Baru</button>
+      </div>
+
+      <p id="saveStatus" class="status" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

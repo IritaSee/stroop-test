@@ -1,0 +1,108 @@
+import os
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
+
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
+from supabase import Client, create_client
+
+
+app = FastAPI(title="Stroop API", version="1.0.0")
+
+allowed_origins = [origin.strip() for origin in os.getenv("ALLOWED_ORIGINS", "*").split(",") if origin.strip()]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins if allowed_origins else ["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+class TrialResult(BaseModel):
+    trialNum: int
+    type: str
+    word: str
+    printColor: str
+    response: str
+    rt: Optional[int]
+    correct: bool
+
+
+class SessionPayload(BaseModel):
+    participant_id: str = Field(min_length=1, max_length=128)
+    study_day: str = Field(min_length=1, max_length=32)
+    session_label: str = Field(min_length=1, max_length=32)
+    summary: Dict[str, Any]
+    interference_score: Optional[int] = None
+    overall_accuracy: int = Field(ge=0, le=100)
+    trials: List[TrialResult]
+    client_submitted_at: Optional[str] = None
+    user_agent: Optional[str] = None
+    viewport: Optional[str] = None
+
+
+def get_supabase() -> Client:
+    url = os.getenv("SUPABASE_URL")
+    key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+
+    if not url or not key:
+        raise HTTPException(
+            status_code=500,
+            detail="Supabase credentials are not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.",
+        )
+
+    return create_client(url, key)
+
+
+@app.get("/api/health")
+def health_check() -> Dict[str, str]:
+    return {"status": "ok", "service": "stroop-backend"}
+
+
+@app.post("/api/results")
+def create_result(payload: SessionPayload) -> Dict[str, str]:
+    supabase = get_supabase()
+
+    row = {
+        "participant_id": payload.participant_id,
+        "study_day": payload.study_day,
+        "session_label": payload.session_label,
+        "summary": payload.summary,
+        "interference_score": payload.interference_score,
+        "overall_accuracy": payload.overall_accuracy,
+        "trials": [trial.model_dump() for trial in payload.trials],
+        "client_submitted_at": payload.client_submitted_at,
+        "user_agent": payload.user_agent,
+        "viewport": payload.viewport,
+        "received_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    try:
+        response = supabase.table("stroop_results").insert(row).execute()
+    except Exception as exc:  # pragma: no cover
+        raise HTTPException(status_code=500, detail=f"Failed to save result: {exc}") from exc
+
+    data = response.data or []
+    if not data:
+        raise HTTPException(status_code=500, detail="Result was not stored in Supabase.")
+
+    return {"status": "saved", "result_id": str(data[0].get("id", "unknown"))}
+
+
+@app.get("/api/results")
+def list_results(participant_id: Optional[str] = None, limit: int = 50) -> Dict[str, Any]:
+    supabase = get_supabase()
+    safe_limit = max(1, min(limit, 500))
+
+    query = supabase.table("stroop_results").select("*").order("created_at", desc=True).limit(safe_limit)
+    if participant_id:
+        query = query.eq("participant_id", participant_id)
+
+    try:
+        response = query.execute()
+    except Exception as exc:  # pragma: no cover
+        raise HTTPException(status_code=500, detail=f"Failed to query results: {exc}") from exc
+
+    return {"count": len(response.data or []), "items": response.data or []}

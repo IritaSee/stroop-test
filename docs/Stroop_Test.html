@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stroop Color-Word Test &mdash; Alat Ukur Cognitive Fatigue</title>
+<style>
+  :root{
+    --navy:#1F4E5F; --blue:#2E75B6; --bg:#F7FAFB; --ink:#1A2530; --grey:#6B7785; --line:#D9E2E6;
+    --red:#D7263D; --blu:#2563EB; --grn:#15803D; --ylw:#C9920A;
+  }
+  *{box-sizing:border-box;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+    background:var(--bg); color:var(--ink); margin:0; min-height:100vh;
+    display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  .card{
+    background:#fff; border:1px solid var(--line); border-radius:14px;
+    max-width:640px; width:100%; padding:36px 40px; box-shadow:0 2px 18px rgba(20,40,60,0.06);
+  }
+  h1{font-size:20px; color:var(--navy); margin:0 0 4px;}
+  .sub{color:var(--grey); font-size:13.5px; margin:0 0 22px;}
+  label{display:block; font-size:13px; font-weight:600; color:var(--navy); margin:14px 0 6px;}
+  input[type=text], select{
+    width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:8px;
+    font-size:14px; font-family:inherit; background:#fcfdfe;
+  }
+  .row{display:flex; gap:12px;}
+  .row > div{flex:1;}
+  button.primary{
+    margin-top:24px; background:var(--navy); color:#fff; border:none; border-radius:8px;
+    padding:13px 22px; font-size:14.5px; font-weight:600; cursor:pointer; width:100%;
+  }
+  button.primary:hover{background:var(--blue);}
+  button.secondary{
+    margin-top:10px; background:#fff; color:var(--navy); border:1.5px solid var(--navy); border-radius:8px;
+    padding:11px 22px; font-size:14px; font-weight:600; cursor:pointer; width:100%;
+  }
+  p.note{font-size:12.5px; color:var(--grey); line-height:1.6; margin-top:18px; border-left:3px solid var(--blue); padding-left:12px;}
+  .hide{display:none !important;}
+
+  /* test screen */
+  #testScreen{ text-align:center; }
+  #fixation, #stimulus{
+    font-size:54px; font-weight:800; height:160px; display:flex; align-items:center; justify-content:center;
+    letter-spacing:2px;
+  }
+  #trialCounter{color:var(--grey); font-size:13px; margin-bottom:4px;}
+  .choices{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:18px;}
+  .choiceBtn{
+    padding:18px 10px; border-radius:10px; border:none; font-size:16px; font-weight:700;
+    color:#fff; cursor:pointer; transition:transform .05s;
+  }
+  .choiceBtn:active{transform:scale(0.96);}
+  .c-merah{background:var(--red);} .c-biru{background:var(--blu);}
+  .c-hijau{background:var(--grn);} .c-kuning{background:var(--ylw);}
+
+  /* results */
+  table{width:100%; border-collapse:collapse; margin-top:16px; font-size:13.5px;}
+  th, td{border:1px solid var(--line); padding:8px 10px; text-align:left;}
+  th{background:var(--navy); color:#fff; font-weight:600;}
+  tr:nth-child(even){background:#F4F8F9;}
+  .bigstat{font-size:28px; font-weight:800; color:var(--navy);}
+  .stat-label{font-size:12.5px; color:var(--grey);}
+  .stat-grid{display:grid; grid-template-columns:1fr 1fr; gap:18px; margin:18px 0;}
+  .stat-box{background:#F4F8F9; border-radius:10px; padding:14px 16px; text-align:center;}
+  .progressbar{height:6px; background:var(--line); border-radius:4px; overflow:hidden; margin-bottom:18px;}
+  .progressbar > div{height:100%; background:var(--blue); width:0%; transition:width .15s;}
+</style>
+</head>
+<body>
+
+<div class="card" id="setupScreen">
+  <h1>Stroop Color-Word Test</h1>
+  <p class="sub">Alat ukur perilaku untuk cognitive fatigue (interference score). Isi data sesi sebelum mulai.</p>
+
+  <label>ID / Nama Partisipan</label>
+  <input type="text" id="pid" placeholder="mis. P01">
+
+  <div class="row">
+    <div>
+      <label>Hari ke-</label>
+      <input type="text" id="day" placeholder="mis. 3">
+    </div>
+    <div>
+      <label>Sesi</label>
+      <select id="session">
+        <option value="Pagi">Pagi (baseline)</option>
+        <option value="Sore">Sore (pasca-kerja)</option>
+      </select>
+    </div>
+  </div>
+
+  <button class="primary" onclick="goInstructions()">Lanjut ke Instruksi</button>
+
+  <p class="note">
+    <b>Catatan administrasi:</b> jalankan tes ini di tempat yang tenang, tanpa interupsi, idealnya pada waktu yang konsisten setiap hari (mis. selalu di awal dan akhir jam kerja). Gunakan layar yang sama jika memungkinkan untuk konsistensi tampilan warna.
+  </p>
+</div>
+
+<div class="card hide" id="instructionScreen">
+  <h1>Instruksi</h1>
+  <p style="line-height:1.7; font-size:14.5px;">
+    Anda akan melihat sebuah <b>kata warna</b> (MERAH, BIRU, HIJAU, atau KUNING) yang dicetak dalam salah satu dari empat warna tersebut.<br><br>
+    Tugas Anda: klik tombol yang sesuai dengan <b>warna cetak</b> kata tersebut &mdash; <u>bukan</u> arti/bacaan katanya.<br><br>
+    Contoh: jika kata "MERAH" dicetak dengan warna biru, maka jawaban yang benar adalah tombol <b>BIRU</b>.<br><br>
+    Jawablah secepat dan seakurat mungkin. Akan ada beberapa soal latihan dahulu sebelum tes sesungguhnya dimulai.
+  </p>
+  <button class="primary" onclick="startPractice()">Mulai Latihan (6 soal)</button>
+</div>
+
+<div class="card hide" id="testScreen">
+  <div class="progressbar"><div id="progressFill"></div></div>
+  <div id="trialCounter"></div>
+  <div id="fixation" class="hide">+</div>
+  <div id="stimulus"></div>
+  <div class="choices">
+    <button class="choiceBtn c-merah" onclick="respond('Merah')">MERAH</button>
+    <button class="choiceBtn c-biru" onclick="respond('Biru')">BIRU</button>
+    <button class="choiceBtn c-hijau" onclick="respond('Hijau')">HIJAU</button>
+    <button class="choiceBtn c-kuning" onclick="respond('Kuning')">KUNING</button>
+  </div>
+</div>
+
+<div class="card hide" id="practiceDoneScreen">
+  <h1>Latihan selesai</h1>
+  <p style="font-size:14.5px;">Bagus. Sekarang tes utama akan dimulai (36 soal: 12 kongruen, 12 inkongruen, 12 netral, diacak). Jawab secepat dan seakurat mungkin.</p>
+  <button class="primary" onclick="startMain()">Mulai Tes Utama</button>
+</div>
+
+<div class="card hide" id="resultsScreen">
+  <h1>Hasil Tes</h1>
+  <p class="sub" id="resultMeta"></p>
+
+  <div class="stat-grid">
+    <div class="stat-box">
+      <div class="bigstat" id="interferenceScore">&ndash;</div>
+      <div class="stat-label">Interference Score (ms)<br>RT Inkongruen &minus; RT Kongruen</div>
+    </div>
+    <div class="stat-box">
+      <div class="bigstat" id="accuracyOverall">&ndash;</div>
+      <div class="stat-label">Akurasi Keseluruhan</div>
+    </div>
+  </div>
+
+  <table>
+    <thead><tr><th>Jenis Trial</th><th>n</th><th>RT Rata-rata (ms)</th><th>Akurasi</th></tr></thead>
+    <tbody id="resultsTableBody"></tbody>
+  </table>
+
+  <button class="primary" onclick="downloadCSV()">Unduh Data (.csv)</button>
+  <button class="secondary" onclick="location.reload()">Mulai Sesi Baru</button>
+
+  <p class="note">
+    Simpan file .csv ini dengan rapi per partisipan/hari/sesi (mis. <i>P01_hari03_sore.csv</i>). Gabungkan seluruh file di Excel/SPSS/R untuk analisis &Delta;Stroop = interference score sore &minus; interference score pagi.
+  </p>
+</div>
+
+<script>
+const COLORS = ["Merah","Biru","Hijau","Kuning"];
+const HEX = {Merah:"#D7263D", Biru:"#2563EB", Hijau:"#15803D", Kuning:"#C9920A"};
+let pid="", day="", session="";
+let trialList = [];
+let currentTrialIndex = 0;
+let isPractice = false;
+let stimulusOnsetTime = 0;
+let results = []; // {phase, trialNum, type, word, color, rt, correct}
+let awaitingResponse = false;
+let timeoutHandle = null;
+
+function goInstructions(){
+  pid = document.getElementById('pid').value.trim() || "ANON";
+  day = document.getElementById('day').value.trim() || "0";
+  session = document.getElementById('session').value;
+  document.getElementById('setupScreen').classList.add('hide');
+  document.getElementById('instructionScreen').classList.remove('hide');
+}
+
+function buildTrials(n, isPracticeBlock){
+  const list = [];
+  const typesPerBlock = Math.floor(n/3);
+  for(let t=0;t<typesPerBlock;t++){ list.push(makeTrial("congruent")); }
+  for(let t=0;t<typesPerBlock;t++){ list.push(makeTrial("incongruent")); }
+  for(let t=0;t<typesPerBlock;t++){ list.push(makeTrial("neutral")); }
+  // shuffle
+  for(let i=list.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [list[i],list[j]] = [list[j],list[i]];
+  }
+  return list;
+}
+
+function makeTrial(type){
+  if(type==="neutral"){
+    const color = COLORS[Math.floor(Math.random()*COLORS.length)];
+    return {type, word:"XXXX", color};
+  }
+  const word = COLORS[Math.floor(Math.random()*COLORS.length)];
+  let color;
+  if(type==="congruent"){ color = word; }
+  else {
+    do { color = COLORS[Math.floor(Math.random()*COLORS.length)]; } while(color===word);
+  }
+  return {type, word, color};
+}
+
+function startPractice(){
+  isPractice = true;
+  trialList = buildTrials(6, true);
+  currentTrialIndex = 0;
+  document.getElementById('instructionScreen').classList.add('hide');
+  document.getElementById('testScreen').classList.remove('hide');
+  runTrial();
+}
+
+function startMain(){
+  isPractice = false;
+  trialList = buildTrials(36, false);
+  currentTrialIndex = 0;
+  document.getElementById('practiceDoneScreen').classList.add('hide');
+  document.getElementById('testScreen').classList.remove('hide');
+  runTrial();
+}
+
+function runTrial(){
+  if(currentTrialIndex >= trialList.length){
+    finishBlock();
+    return;
+  }
+  const total = trialList.length;
+  document.getElementById('progressFill').style.width = Math.round((currentTrialIndex/total)*100)+"%";
+  document.getElementById('trialCounter').textContent =
+    (isPractice ? "Latihan " : "Soal ") + (currentTrialIndex+1) + " / " + total;
+
+  const stimEl = document.getElementById('stimulus');
+  const fixEl = document.getElementById('fixation');
+  stimEl.textContent = "";
+  fixEl.classList.remove('hide');
+  awaitingResponse = false;
+
+  setTimeout(()=>{
+    fixEl.classList.add('hide');
+    const trial = trialList[currentTrialIndex];
+    stimEl.textContent = trial.word;
+    stimEl.style.color = HEX[trial.color];
+    stimulusOnsetTime = performance.now();
+    awaitingResponse = true;
+    timeoutHandle = setTimeout(()=>{
+      if(awaitingResponse){ respond(null); }
+    }, 3000);
+  }, 500);
+}
+
+function respond(chosenColor){
+  if(!awaitingResponse) return;
+  awaitingResponse = false;
+  clearTimeout(timeoutHandle);
+  const rt = Math.round(performance.now() - stimulusOnsetTime);
+  const trial = trialList[currentTrialIndex];
+  const correct = chosenColor === trial.color;
+  results.push({
+    phase: isPractice ? "practice" : "main",
+    trialNum: currentTrialIndex+1,
+    type: trial.type,
+    word: trial.word,
+    printColor: trial.color,
+    response: chosenColor || "(timeout)",
+    rt: chosenColor ? rt : null,
+    correct: chosenColor ? correct : false
+  });
+  currentTrialIndex++;
+  runTrial();
+}
+
+function finishBlock(){
+  document.getElementById('testScreen').classList.add('hide');
+  if(isPractice){
+    document.getElementById('practiceDoneScreen').classList.remove('hide');
+  } else {
+    showResults();
+  }
+}
+
+function showResults(){
+  const mainResults = results.filter(r=>r.phase==="main");
+  const types = ["congruent","incongruent","neutral"];
+  const summary = {};
+  types.forEach(t=>{
+    const rows = mainResults.filter(r=>r.type===t);
+    const correctRows = rows.filter(r=>r.correct && r.rt!==null);
+    const meanRT = correctRows.length ? Math.round(correctRows.reduce((a,b)=>a+b.rt,0)/correctRows.length) : null;
+    const acc = rows.length ? Math.round(100*rows.filter(r=>r.correct).length/rows.length) : null;
+    summary[t] = {n: rows.length, meanRT, acc};
+  });
+
+  const interference = (summary.incongruent.meanRT!==null && summary.congruent.meanRT!==null)
+    ? (summary.incongruent.meanRT - summary.congruent.meanRT) : null;
+  const overallAcc = Math.round(100*mainResults.filter(r=>r.correct).length/mainResults.length);
+
+  document.getElementById('interferenceScore').textContent = interference!==null ? (interference+" ms") : "n/a";
+  document.getElementById('accuracyOverall').textContent = overallAcc + "%";
+  document.getElementById('resultMeta').textContent =
+    "Partisipan: "+pid+"  |  Hari ke-"+day+"  |  Sesi: "+session;
+
+  const tbody = document.getElementById('resultsTableBody');
+  tbody.innerHTML = "";
+  const labelMap = {congruent:"Kongruen", incongruent:"Inkongruen", neutral:"Netral"};
+  types.forEach(t=>{
+    const s = summary[t];
+    tbody.innerHTML += `<tr><td>${labelMap[t]}</td><td>${s.n}</td><td>${s.meanRT ?? "n/a"}</td><td>${s.acc ?? "n/a"}%</td></tr>`;
+  });
+
+  document.getElementById('resultsScreen').classList.remove('hide');
+  window._summaryForExport = {pid, day, session, summary, interference, overallAcc};
+}
+
+function downloadCSV(){
+  let csv = "pid,day,session,phase,trialNum,type,word,printColor,response,rt_ms,correct\n";
+  results.forEach(r=>{
+    csv += [pid, day, session, r.phase, r.trialNum, r.type, r.word, r.printColor, r.response, r.rt ?? "", r.correct].join(",") + "\n";
+  });
+  csv += "\n";
+  csv += "SUMMARY,,,,,,,,,,\n";
+  csv += "type,n,meanRT_ms,accuracy_pct\n";
+  const s = window._summaryForExport.summary;
+  Object.keys(s).forEach(t=>{
+    csv += [t, s[t].n, s[t].meanRT ?? "", s[t].acc ?? ""].join(",") + "\n";
+  });
+  csv += "\nInterferenceScore_ms," + (window._summaryForExport.interference ?? "") + "\n";
+  csv += "OverallAccuracy_pct," + window._summaryForExport.overallAcc + "\n";
+
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `Stroop_${pid}_hari${day}_${session}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
