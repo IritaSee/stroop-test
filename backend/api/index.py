@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from supabase import Client, create_client
@@ -10,10 +11,22 @@ from supabase import Client, create_client
 
 app = FastAPI(title="Stroop API", version="1.0.0")
 
-allowed_origins = [origin.strip() for origin in os.getenv("ALLOWED_ORIGINS", "*").split(",") if origin.strip()]
+def parse_allowed_origins(raw_value: str) -> List[str]:
+    origins: List[str] = []
+    for raw_origin in raw_value.split(","):
+        origin = raw_origin.strip().rstrip("/")
+        if origin:
+            origins.append(origin)
+    return origins
+
+
+allowed_origins = parse_allowed_origins(os.getenv("ALLOWED_ORIGINS", ""))
+allow_origin_regex = os.getenv("ALLOWED_ORIGIN_REGEX", "").strip() or None
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins if allowed_origins else ["*"],
+    allow_origins=allowed_origins,
+    allow_origin_regex=allow_origin_regex,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -59,6 +72,12 @@ def get_supabase() -> Client:
 @app.get("/api/health")
 def health_check() -> Dict[str, str]:
     return {"status": "ok", "service": "stroop-backend"}
+
+
+@app.options("/api/{rest_of_path:path}")
+def preflight_handler(rest_of_path: str) -> Response:
+    # CORSMiddleware injects actual CORS headers. This endpoint ensures OPTIONS always resolves.
+    return Response(status_code=204)
 
 
 @app.post("/api/results")

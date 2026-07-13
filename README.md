@@ -56,10 +56,18 @@ Lalu akses API di `http://127.0.0.1:8000/api/health`.
 3. Tambahkan Environment Variables di Project Settings:
    - `SUPABASE_URL`
    - `SUPABASE_SERVICE_ROLE_KEY`
-   - `ALLOWED_ORIGINS` (domain frontend produksi)
+   - `ALLOWED_ORIGINS` (pisahkan dengan koma, contoh domain produksi + localhost)
+   - `ALLOWED_ORIGIN_REGEX` (opsional, disarankan: `^https://.*\\.vercel\\.app$` untuk preview deployment)
 4. Deploy.
 
 Root domain akan menyajikan `frontend/index.html`, sedangkan `/api/*` diarahkan ke FastAPI serverless.
+
+## Cegah masalah CORS di deployment
+
+- Gunakan kombinasi `ALLOWED_ORIGINS` dan `ALLOWED_ORIGIN_REGEX` agar domain preview Vercel juga lolos preflight.
+- Hindari trailing slash pada origin (mis. gunakan `https://app.example.com`, bukan `https://app.example.com/`).
+- Frontend sudah memanggil API dengan path relatif `/api`, jadi pada domain yang sama biasanya tidak terkena CORS.
+- Jika masih muncul `500`, itu biasanya bukan CORS melainkan konfigurasi Supabase (URL/key/table) di backend.
 
 ## Catatan UX/Aksesibilitas yang sudah ditingkatkan
 
