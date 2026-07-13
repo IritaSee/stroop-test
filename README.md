@@ -69,6 +69,20 @@ Root domain akan menyajikan `frontend/index.html`, sedangkan `/api/*` diarahkan 
 - Frontend sudah memanggil API dengan path relatif `/api`, jadi pada domain yang sama biasanya tidak terkena CORS.
 - Jika masih muncul `500`, itu biasanya bukan CORS melainkan konfigurasi Supabase (URL/key/table) di backend.
 
+## Diagnosa Error 500 (backend atau database)
+
+Gunakan endpoint berikut di domain deployment:
+
+- `GET /api/health` memastikan FastAPI berjalan.
+- `GET /api/health/db` memastikan koneksi Supabase + query ke tabel `stroop_results` berhasil.
+
+Jika `health` sukses tetapi `health/db` gagal, cek:
+
+- `SUPABASE_URL` benar dan aktif.
+- `SUPABASE_SERVICE_ROLE_KEY` benar (bukan anon key).
+- SQL schema di `backend/db/schema.sql` sudah dijalankan di project Supabase yang sama.
+- Environment Variables sudah di-set pada environment Vercel yang benar (Production/Preview).
+
 ## Catatan UX/Aksesibilitas yang sudah ditingkatkan
 
 - layout responsif desktop/mobile

@@ -358,8 +358,25 @@ async function saveResultsToBackend(payload) {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const message = errorData.detail || `HTTP ${response.status}`;
+      const contentType = response.headers.get("content-type") || "";
+      let message = `HTTP ${response.status}`;
+
+      if (contentType.includes("application/json")) {
+        const errorData = await response.json().catch(() => ({}));
+        if (typeof errorData?.detail === "string") {
+          message = errorData.detail;
+        } else if (errorData?.detail?.error) {
+          message = `${errorData.detail.message || "Server error"}: ${errorData.detail.error}`;
+        } else if (errorData?.message) {
+          message = errorData.message;
+        }
+      } else {
+        const textBody = (await response.text().catch(() => "")).trim();
+        if (textBody) {
+          message = textBody;
+        }
+      }
+
       throw new Error(message);
     }
 

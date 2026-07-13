@@ -56,9 +56,29 @@ class SessionPayload(BaseModel):
     viewport: Optional[str] = None
 
 
+def extract_error_detail(exc: Exception) -> str:
+    # Supabase/PostgREST exceptions may expose a structured JSON payload in different attributes.
+    response = getattr(exc, "response", None)
+    if isinstance(response, dict):
+        message = response.get("message") or response.get("error_description")
+        details = response.get("details")
+        hint = response.get("hint")
+        pieces = [piece for piece in [message, details, hint] if piece]
+        if pieces:
+            return " | ".join(str(piece) for piece in pieces)
+
+    for attr in ["message", "details", "hint"]:
+        value = getattr(exc, attr, None)
+        if value:
+            return str(value)
+
+    text = str(exc)
+    return text if text else "Unknown backend error"
+
+
 def get_supabase() -> Client:
-    url = os.getenv("SUPABASE_URL")
-    key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    url = (os.getenv("SUPABASE_URL") or "").strip().strip('"').strip("'")
+    key = (os.getenv("SUPABASE_SERVICE_ROLE_KEY") or "").strip().strip('"').strip("'")
 
     if not url or not key:
         raise HTTPException(
@@ -66,12 +86,48 @@ def get_supabase() -> Client:
             detail="Supabase credentials are not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.",
         )
 
-    return create_client(url, key)
+    try:
+        return create_client(url, key)
+    except Exception as exc:  # pragma: no cover
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "message": "Invalid Supabase configuration",
+                "error": extract_error_detail(exc),
+                "hint": "Verify SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Vercel env vars without quotes.",
+            },
+        ) from exc
 
 
 @app.get("/api/health")
 def health_check() -> Dict[str, str]:
     return {"status": "ok", "service": "stroop-backend"}
+
+
+@app.get("/api/health/db")
+def db_health_check() -> Dict[str, Any]:
+    supabase = get_supabase()
+
+    try:
+        response = supabase.table("stroop_results").select("id").limit(1).execute()
+    except Exception as exc:  # pragma: no cover
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "message": "Supabase query failed",
+                "error": extract_error_detail(exc),
+            },
+        ) from exc
+
+    return {
+        "status": "ok",
+        "table": "stroop_results",
+        "rows_returned": len(response.data or []),
+        "env": {
+            "has_supabase_url": bool(os.getenv("SUPABASE_URL")),
+            "has_service_role_key": bool(os.getenv("SUPABASE_SERVICE_ROLE_KEY")),
+        },
+    }
 
 
 @app.options("/api/{rest_of_path:path}")
@@ -101,7 +157,18 @@ def create_result(payload: SessionPayload) -> Dict[str, str]:
     try:
         response = supabase.table("stroop_results").insert(row).execute()
     except Exception as exc:  # pragma: no cover
-        raise HTTPException(status_code=500, detail=f"Failed to save result: {exc}") from exc
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "message": "Failed to save result",
+                "error": extract_error_detail(exc),
+                "context": {
+                    "participant_id": payload.participant_id,
+                    "session_label": payload.session_label,
+                    "trial_count": len(payload.trials),
+                },
+            },
+        ) from exc
 
     data = response.data or []
     if not data:
@@ -122,6 +189,12 @@ def list_results(participant_id: Optional[str] = None, limit: int = 50) -> Dict[
     try:
         response = query.execute()
     except Exception as exc:  # pragma: no cover
-        raise HTTPException(status_code=500, detail=f"Failed to query results: {exc}") from exc
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "message": "Failed to query results",
+                "error": extract_error_detail(exc),
+            },
+        ) from exc
 
     return {"count": len(response.data or []), "items": response.data or []}
