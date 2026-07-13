@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VAS-Fatigue \u2014 Skala Analog Visual Kelelahan</title>
+<style>
+  :root{ --navy:#1F4E5F; --blue:#2E75B6; --bg:#F7FAFB; --ink:#1A2530; --grey:#6B7785; --line:#D9E2E6; }
+  *{box-sizing:border-box;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+    background:var(--bg); color:var(--ink); margin:0; min-height:100vh;
+    display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  .card{
+    background:#fff; border:1px solid var(--line); border-radius:14px;
+    max-width:560px; width:100%; padding:36px 40px; box-shadow:0 2px 18px rgba(20,40,60,0.06);
+  }
+  h1{font-size:20px; color:var(--navy); margin:0 0 4px;}
+  .sub{color:var(--grey); font-size:13.5px; margin:0 0 22px;}
+  label{display:block; font-size:13px; font-weight:600; color:var(--navy); margin:14px 0 6px;}
+  input[type=text], select{
+    width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:8px;
+    font-size:14px; font-family:inherit; background:#fcfdfe;
+  }
+  .row{display:flex; gap:12px;}
+  .row > div{flex:1;}
+  .vas-wrap{margin:30px 0 14px;}
+  .vas-question{font-size:15.5px; font-weight:600; text-align:center; margin-bottom:18px;}
+  input[type=range]{ width:100%; height:8px; }
+  .vas-labels{display:flex; justify-content:space-between; font-size:12.5px; color:var(--grey); margin-top:6px;}
+  .vas-value{text-align:center; margin-top:14px;}
+  .vas-value .num{font-size:34px; font-weight:800; color:var(--navy);}
+  button.primary{
+    margin-top:22px; background:var(--navy); color:#fff; border:none; border-radius:8px;
+    padding:13px 22px; font-size:14.5px; font-weight:600; cursor:pointer; width:100%;
+  }
+  button.primary:hover{background:var(--blue);}
+  button.secondary{
+    margin-top:10px; background:#fff; color:var(--navy); border:1.5px solid var(--navy); border-radius:8px;
+    padding:11px 22px; font-size:14px; font-weight:600; cursor:pointer; width:100%;
+  }
+  .hide{display:none !important;}
+  p.note{font-size:12.5px; color:var(--grey); line-height:1.6; margin-top:18px; border-left:3px solid var(--blue); padding-left:12px;}
+  table{width:100%; border-collapse:collapse; margin-top:14px; font-size:13.5px;}
+  th, td{border:1px solid var(--line); padding:8px 10px; text-align:left;}
+  th{background:var(--navy); color:#fff;}
+</style>
+</head>
+<body>
+
+<div class="card" id="setupScreen">
+  <h1>VAS-Fatigue</h1>
+  <p class="sub">Skala analog visual untuk kelelahan mental saat ini (format generik, satu item).</p>
+
+  <label>ID / Nama Partisipan</label>
+  <input type="text" id="pid" placeholder="mis. P01">
+  <div class="row">
+    <div><label>Hari ke-</label><input type="text" id="day" placeholder="mis. 3"></div>
+    <div><label>Sesi</label>
+      <select id="session"><option value="Pagi">Pagi</option><option value="Sore">Sore</option></select>
+    </div>
+  </div>
+  <button class="primary" onclick="goVAS()">Lanjut</button>
+</div>
+
+<div class="card hide" id="vasScreen">
+  <h1>Penilaian Kelelahan Saat Ini</h1>
+  <div class="vas-wrap">
+    <div class="vas-question">Seberapa lelah secara mental yang Anda rasakan saat ini?</div>
+    <input type="range" id="vasSlider" min="0" max="100" value="50" oninput="updateVal()">
+    <div class="vas-labels"><span>Tidak lelah sama sekali</span><span>Sangat lelah</span></div>
+    <div class="vas-value"><span class="num" id="vasVal">50</span><span style="color:var(--grey); font-size:13px;"> / 100</span></div>
+  </div>
+  <button class="primary" onclick="submitVAS()">Simpan Penilaian</button>
+</div>
+
+<div class="card hide" id="doneScreen">
+  <h1>Tersimpan</h1>
+  <table>
+    <tr><th>Partisipan</th><td id="o_pid"></td></tr>
+    <tr><th>Hari ke-</th><td id="o_day"></td></tr>
+    <tr><th>Sesi</th><td id="o_session"></td></tr>
+    <tr><th>Skor VAS-F (0\u2013100)</th><td id="o_val"></td></tr>
+    <tr><th>Waktu</th><td id="o_time"></td></tr>
+  </table>
+  <button class="primary" onclick="downloadCSV()">Unduh Data (.csv)</button>
+  <button class="secondary" onclick="location.reload()">Mulai Sesi Baru</button>
+  <p class="note">Gunakan skor ini sebagai data pelengkap/validasi konvergen untuk &Delta;Stroop &mdash; idealnya diisi bersamaan dengan sesi Stroop sore.</p>
+</div>
+
+<script>
+let pid="", day="", session="", vasValue=50, timestamp="";
+
+function goVAS(){
+  pid = document.getElementById('pid').value.trim() || "ANON";
+  day = document.getElementById('day').value.trim() || "0";
+  session = document.getElementById('session').value;
+  document.getElementById('setupScreen').classList.add('hide');
+  document.getElementById('vasScreen').classList.remove('hide');
+}
+function updateVal(){
+  vasValue = document.getElementById('vasSlider').value;
+  document.getElementById('vasVal').textContent = vasValue;
+}
+function submitVAS(){
+  timestamp = new Date().toLocaleString('id-ID');
+  document.getElementById('vasScreen').classList.add('hide');
+  document.getElementById('doneScreen').classList.remove('hide');
+  document.getElementById('o_pid').textContent = pid;
+  document.getElementById('o_day').textContent = day;
+  document.getElementById('o_session').textContent = session;
+  document.getElementById('o_val').textContent = vasValue;
+  document.getElementById('o_time').textContent = timestamp;
+}
+function downloadCSV(){
+  const csv = "pid,day,session,vasf_score,timestamp\n" + [pid,day,session,vasValue,timestamp].join(",") + "\n";
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = `VASF_${pid}_hari${day}_${session}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>

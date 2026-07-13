@@ -8,6 +8,7 @@ create table if not exists public.stroop_results (
   summary jsonb not null,
   interference_score integer,
   overall_accuracy integer not null check (overall_accuracy between 0 and 100),
+  vas_fatigue_score integer check (vas_fatigue_score between 0 and 100),
   trials jsonb not null,
   client_submitted_at timestamptz,
   user_agent text,
@@ -18,6 +19,9 @@ create table if not exists public.stroop_results (
 
 create index if not exists stroop_results_participant_idx on public.stroop_results (participant_id);
 create index if not exists stroop_results_created_at_idx on public.stroop_results (created_at desc);
+
+alter table public.stroop_results
+add column if not exists vas_fatigue_score integer check (vas_fatigue_score between 0 and 100);
 
 alter table public.stroop_results enable row level security;
 

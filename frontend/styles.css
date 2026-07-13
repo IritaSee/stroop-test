@@ -155,6 +155,13 @@ button:focus-visible,
   border: 1.5px solid var(--primary);
 }
 
+.btn-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
 .note {
   margin-top: 1.1rem;
   border-left: 4px solid var(--primary);
@@ -330,6 +337,47 @@ tr:nth-child(even) {
   min-height: 1.5rem;
   margin: 0.7rem 0 0;
   color: var(--muted);
+}
+
+.vas-wrap {
+  margin: 1rem 0 0.7rem;
+}
+
+.vas-slider {
+  width: 100%;
+  margin: 0.2rem 0;
+}
+
+.vas-labels {
+  margin-top: 0.3rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.vas-value {
+  margin: 0.65rem 0 0;
+  text-align: center;
+  color: var(--primary);
+}
+
+.vas-value strong {
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 2rem;
+}
+
+.check-wrap {
+  margin-top: 1rem;
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  color: var(--text);
+}
+
+.check-wrap input {
+  margin-top: 0.22rem;
 }
 
 .skip-link {

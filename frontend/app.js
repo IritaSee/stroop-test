@@ -20,12 +20,16 @@ let results = [];
 let awaitingResponse = false;
 let timeoutHandle = null;
 let summaryForExport = null;
+let vasFatigueScore = 50;
+let pendingSummary = null;
 
 const el = {
   setupScreen: document.getElementById("setupScreen"),
   instructionScreen: document.getElementById("instructionScreen"),
   testScreen: document.getElementById("testScreen"),
   practiceDoneScreen: document.getElementById("practiceDoneScreen"),
+  vasScreen: document.getElementById("vasScreen"),
+  questionnaireScreen: document.getElementById("questionnaireScreen"),
   resultsScreen: document.getElementById("resultsScreen"),
   setupForm: document.getElementById("setupForm"),
   pidInput: document.getElementById("pid"),
@@ -45,6 +49,11 @@ const el = {
   saveCsvBtn: document.getElementById("saveCsvBtn"),
   newSessionBtn: document.getElementById("newSessionBtn"),
   saveStatus: document.getElementById("saveStatus"),
+  vasSlider: document.getElementById("vasSlider"),
+  vasValue: document.getElementById("vasValue"),
+  submitVasBtn: document.getElementById("submitVasBtn"),
+  formDoneCheck: document.getElementById("formDoneCheck"),
+  showResultsBtn: document.getElementById("showResultsBtn"),
   choiceButtons: Array.from(document.querySelectorAll(".choiceBtn"))
 };
 
@@ -53,6 +62,12 @@ el.startPracticeBtn.addEventListener("click", startPractice);
 el.startMainBtn.addEventListener("click", startMain);
 el.saveCsvBtn.addEventListener("click", downloadCSV);
 el.newSessionBtn.addEventListener("click", () => window.location.reload());
+el.vasSlider.addEventListener("input", updateVASValue);
+el.submitVasBtn.addEventListener("click", submitVAS);
+el.formDoneCheck.addEventListener("change", () => {
+  el.showResultsBtn.disabled = !el.formDoneCheck.checked;
+});
+el.showResultsBtn.addEventListener("click", continueToResults);
 
 el.choiceButtons.forEach((button) => {
   button.addEventListener("click", () => respond(button.dataset.color));
@@ -216,10 +231,17 @@ function finishBlock() {
     return;
   }
 
-  showResults();
+  startPostTestFlow();
 }
 
-function showResults() {
+function startPostTestFlow() {
+  pendingSummary = buildSummaryPayload();
+  updateVASValue();
+  switchScreen(el.testScreen, el.vasScreen);
+  el.submitVasBtn.focus();
+}
+
+function buildSummaryPayload() {
   const mainResults = results.filter((row) => row.phase === "main");
   const types = ["congruent", "incongruent", "neutral"];
   const summary = {};
@@ -244,14 +266,7 @@ function showResults() {
     ? Math.round((100 * mainResults.filter((row) => row.correct).length) / mainResults.length)
     : 0;
 
-  el.interferenceScore.textContent = interference !== null ? `${interference} ms` : "n/a";
-  el.accuracyOverall.textContent = `${overallAcc}%`;
-  el.resultMeta.textContent = `Partisipan: ${pid} | Hari ke-${day} | Sesi: ${session}`;
-
-  renderSummaryTable(summary);
-  el.resultsScreen.classList.remove("hidden");
-
-  summaryForExport = {
+  return {
     pid,
     day,
     session,
@@ -261,6 +276,36 @@ function showResults() {
     mainResults,
     submittedAt: new Date().toISOString()
   };
+}
+
+function updateVASValue() {
+  vasFatigueScore = Number(el.vasSlider.value);
+  el.vasValue.textContent = String(vasFatigueScore);
+}
+
+function submitVAS() {
+  switchScreen(el.vasScreen, el.questionnaireScreen);
+  el.formDoneCheck.checked = false;
+  el.showResultsBtn.disabled = true;
+}
+
+function continueToResults() {
+  if (!pendingSummary) {
+    return;
+  }
+
+  summaryForExport = {
+    ...pendingSummary,
+    vasFatigueScore
+  };
+
+  el.interferenceScore.textContent =
+    summaryForExport.interference !== null ? `${summaryForExport.interference} ms` : "n/a";
+  el.accuracyOverall.textContent = `${summaryForExport.overallAcc}%`;
+  el.resultMeta.textContent = `Partisipan: ${pid} | Hari ke-${day} | Sesi: ${session}`;
+
+  renderSummaryTable(summaryForExport.summary);
+  switchScreen(el.questionnaireScreen, el.resultsScreen);
 
   void saveResultsToBackend(summaryForExport);
 }
@@ -322,6 +367,7 @@ function downloadCSV() {
 
   csv += `\nInterferenceScore_ms,${summaryForExport.interference ?? ""}\n`;
   csv += `OverallAccuracy_pct,${summaryForExport.overallAcc}\n`;
+  csv += `VASFatigueScore_0_100,${summaryForExport.vasFatigueScore}\n`;
 
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
@@ -350,6 +396,7 @@ async function saveResultsToBackend(payload) {
         summary: payload.summary,
         interference_score: payload.interference,
         overall_accuracy: payload.overallAcc,
+        vas_fatigue_score: payload.vasFatigueScore,
         trials: payload.mainResults,
         client_submitted_at: payload.submittedAt,
         user_agent: navigator.userAgent,

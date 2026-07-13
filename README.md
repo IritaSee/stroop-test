@@ -30,6 +30,7 @@ Vercel mendukung Python Serverless Function lewat runtime `@vercel/python`, dan 
 3. Ambil:
    - `SUPABASE_URL`
    - `SUPABASE_SERVICE_ROLE_KEY`
+   - `SUPABASE_DB_URL` (Connection string Postgres, untuk auto-migration)
 
 ## Setup Environment
 
@@ -56,11 +57,19 @@ Lalu akses API di `http://127.0.0.1:8000/api/health`.
 3. Tambahkan Environment Variables di Project Settings:
    - `SUPABASE_URL`
    - `SUPABASE_SERVICE_ROLE_KEY`
+   - `SUPABASE_DB_URL` (wajib jika `AUTO_DB_MIGRATION=true`)
+   - `AUTO_DB_MIGRATION` (opsional, default `true`)
    - `ALLOWED_ORIGINS` (pisahkan dengan koma, contoh domain produksi + localhost)
    - `ALLOWED_ORIGIN_REGEX` (opsional, disarankan: `^https://.*\\.vercel\\.app$` untuk preview deployment)
 4. Deploy.
 
 Root domain akan menyajikan `frontend/index.html`, sedangkan `/api/*` diarahkan ke FastAPI serverless.
+
+## Auto Migration di Vercel
+
+- Backend sekarang menjalankan schema migration idempotent dari `backend/db/schema.sql` sebelum akses database pertama.
+- Jika migration gagal, API akan fail-fast dengan error jelas agar deployment tidak lanjut dalam kondisi schema tidak sinkron.
+- Pastikan `SUPABASE_DB_URL` diisi agar auto-migration dapat berjalan.
 
 ## Cegah masalah CORS di deployment
 

@@ -91,6 +91,40 @@
       <button class="btn btn-primary" id="startMainBtn" type="button">Mulai Tes Utama</button>
     </section>
 
+    <section class="panel hidden" id="vasScreen" aria-labelledby="vasTitle">
+      <p class="eyebrow">Langkah 1 dari 2</p>
+      <h2 id="vasTitle">Penilaian VAS Kelelahan</h2>
+      <p class="lead">Seberapa lelah secara mental yang Anda rasakan saat ini?</p>
+
+      <div class="vas-wrap">
+        <input id="vasSlider" class="vas-slider" type="range" min="0" max="100" value="50" aria-label="Skor VAS kelelahan 0 sampai 100">
+        <div class="vas-labels">
+          <span>Tidak lelah sama sekali</span>
+          <span>Sangat lelah</span>
+        </div>
+        <p class="vas-value"><strong id="vasValue">50</strong><span> / 100</span></p>
+      </div>
+
+      <button class="btn btn-primary" id="submitVasBtn" type="button">Lanjut ke Kuesioner</button>
+    </section>
+
+    <section class="panel hidden" id="questionnaireScreen" aria-labelledby="questionnaireTitle">
+      <p class="eyebrow">Langkah 2 dari 2</p>
+      <h2 id="questionnaireTitle">Isi Kuesioner Tambahan</h2>
+      <p>Isi Google Form terlebih dahulu, lalu konfirmasi untuk melihat hasil Stroop.</p>
+
+      <div class="stack-actions">
+        <a class="btn btn-primary btn-link" href="https://forms.gle/Rnc3k6BBZ4dPnzCF7" target="_blank" rel="noopener noreferrer">Buka Kuesioner Stroop</a>
+      </div>
+
+      <label class="check-wrap" for="formDoneCheck">
+        <input id="formDoneCheck" type="checkbox">
+        <span>Saya sudah mengisi Google Form.</span>
+      </label>
+
+      <button class="btn btn-secondary" id="showResultsBtn" type="button" disabled>Tampilkan Hasil</button>
+    </section>
+
     <section class="panel hidden" id="resultsScreen" aria-labelledby="resultsTitle">
       <p class="eyebrow">Hasil</p>
       <h2 id="resultsTitle">Ringkasan Performa</h2>
