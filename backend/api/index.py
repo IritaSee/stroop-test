@@ -9,7 +9,11 @@ from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import psycopg
+from dotenv import load_dotenv
 from supabase import Client, create_client
+
+
+load_dotenv(Path(__file__).resolve().parent.parent.parent / ".env")
 
 
 app = FastAPI(title="Stroop API", version="1.0.0")
