@@ -25,6 +25,8 @@ add column if not exists vas_fatigue_score integer check (vas_fatigue_score betw
 
 alter table public.stroop_results enable row level security;
 
+drop policy if exists "service role full access" on public.stroop_results;
+
 create policy "service role full access"
 on public.stroop_results
 as permissive

@@ -70,6 +70,19 @@ Root domain akan menyajikan `frontend/index.html`, sedangkan `/api/*` diarahkan 
 - Backend sekarang menjalankan schema migration idempotent dari `backend/db/schema.sql` sebelum akses database pertama.
 - Jika migration gagal, API akan fail-fast dengan error jelas agar deployment tidak lanjut dalam kondisi schema tidak sinkron.
 - Pastikan `SUPABASE_DB_URL` diisi agar auto-migration dapat berjalan.
+- Cek status migration lewat `GET /api/health/db` (field `migration`).
+
+### Verifikasi kolom VAS
+
+Jika ingin cek langsung di Supabase SQL Editor:
+
+```sql
+select column_name, data_type
+from information_schema.columns
+where table_schema = 'public'
+   and table_name = 'stroop_results'
+   and column_name = 'vas_fatigue_score';
+```
 
 ## Cegah masalah CORS di deployment
 

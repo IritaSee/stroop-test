@@ -68,6 +68,12 @@ def ensure_schema_migrated() -> None:
         apply_schema_migration()
         _migration_applied = True
 
+
+@app.on_event("startup")
+def run_startup_migration() -> None:
+    if should_auto_migrate():
+        ensure_schema_migrated()
+
 def parse_allowed_origins(raw_value: str) -> List[str]:
     origins: List[str] = []
     for raw_origin in raw_value.split(","):
@@ -183,6 +189,11 @@ def db_health_check() -> Dict[str, Any]:
         "status": "ok",
         "table": "stroop_results",
         "rows_returned": len(response.data or []),
+        "migration": {
+            "auto_enabled": should_auto_migrate(),
+            "applied_in_process": _migration_applied,
+            "has_supabase_db_url": bool(os.getenv("SUPABASE_DB_URL")),
+        },
         "env": {
             "has_supabase_url": bool(os.getenv("SUPABASE_URL")),
             "has_service_role_key": bool(os.getenv("SUPABASE_SERVICE_ROLE_KEY")),
