@@ -7,6 +7,7 @@ const HEX = {
 };
 
 const API_BASE = "/api";
+const FINAL_SESSION_LABEL = "Mid-evening, around 15:00, before getting home";
 
 let pid = "";
 let day = "";
@@ -284,12 +285,25 @@ function updateVASValue() {
 }
 
 function submitVAS() {
-  switchScreen(el.vasScreen, el.questionnaireScreen);
-  el.formDoneCheck.checked = false;
-  el.showResultsBtn.disabled = true;
+  if (isFinalSessionOfDay()) {
+    switchScreen(el.vasScreen, el.questionnaireScreen);
+    el.formDoneCheck.checked = false;
+    el.showResultsBtn.disabled = true;
+    return;
+  }
+
+  finalizeAndShowResults(el.vasScreen);
 }
 
 function continueToResults() {
+  if (!pendingSummary) {
+    return;
+  }
+
+  finalizeAndShowResults(el.questionnaireScreen);
+}
+
+function finalizeAndShowResults(fromScreen) {
   if (!pendingSummary) {
     return;
   }
@@ -305,9 +319,13 @@ function continueToResults() {
   el.resultMeta.textContent = `Partisipan: ${pid} | Hari ke-${day} | Sesi: ${session}`;
 
   renderSummaryTable(summaryForExport.summary);
-  switchScreen(el.questionnaireScreen, el.resultsScreen);
+  switchScreen(fromScreen, el.resultsScreen);
 
   void saveResultsToBackend(summaryForExport);
+}
+
+function isFinalSessionOfDay() {
+  return session === FINAL_SESSION_LABEL;
 }
 
 function renderSummaryTable(summary) {
