@@ -21,7 +21,6 @@ let isPractice = false;
 let stimulusOnsetTime = 0;
 let results = [];
 let awaitingResponse = false;
-let timeoutHandle = null;
 let summaryForExport = null;
 let vasFatigueScore = 50;
 let pendingSummary = null;
@@ -60,7 +59,9 @@ initializeStudyDate();
 el.setupForm.addEventListener("submit", goInstructions);
 el.startPracticeBtn.addEventListener("click", startPractice);
 el.startMainBtn.addEventListener("click", startMain);
-el.saveCsvBtn.addEventListener("click", downloadCSV);
+if (el.saveCsvBtn) {
+  el.saveCsvBtn.addEventListener("click", downloadCSV);
+}
 el.newSessionBtn.addEventListener("click", () => window.location.reload());
 el.vasSlider.addEventListener("input", updateVASValue);
 el.submitVasBtn.addEventListener("click", submitVAS);
@@ -177,25 +178,16 @@ function runTrial() {
   el.trialCounter.textContent = `${isPractice ? "Latihan" : "Soal"} ${currentTrialIndex + 1} / ${total}`;
 
   el.stimulus.textContent = "";
-  el.fixation.classList.remove("hidden");
+  el.fixation.classList.add("hidden");
   awaitingResponse = false;
   setChoiceDisabled(true);
 
-  window.setTimeout(() => {
-    el.fixation.classList.add("hidden");
-    const trial = trialList[currentTrialIndex];
-    el.stimulus.textContent = trial.word;
-    el.stimulus.style.color = HEX[trial.color];
-    stimulusOnsetTime = performance.now();
-    awaitingResponse = true;
-    setChoiceDisabled(false);
-
-    timeoutHandle = window.setTimeout(() => {
-      if (awaitingResponse) {
-        respond(null);
-      }
-    }, 3000);
-  }, 500);
+  const trial = trialList[currentTrialIndex];
+  el.stimulus.textContent = trial.word;
+  el.stimulus.style.color = HEX[trial.color];
+  stimulusOnsetTime = performance.now();
+  awaitingResponse = true;
+  setChoiceDisabled(false);
 }
 
 function respond(chosenColor) {
@@ -204,7 +196,6 @@ function respond(chosenColor) {
   }
 
   awaitingResponse = false;
-  clearTimeout(timeoutHandle);
   setChoiceDisabled(true);
 
   const rt = Math.round(performance.now() - stimulusOnsetTime);
@@ -217,14 +208,10 @@ function respond(chosenColor) {
     type: trial.type,
     word: trial.word,
     printColor: trial.color,
-    response: chosenColor || "(timeout)",
-    rt: chosenColor ? rt : null,
-    correct: chosenColor ? correct : false
+    response: chosenColor,
+    rt,
+    correct
   });
-
-  if (!chosenColor) {
-    el.trialStatus.textContent = "Waktu habis untuk trial ini.";
-  }
 
   currentTrialIndex += 1;
   runTrial();
