@@ -17,7 +17,7 @@
     <section class="panel" id="setupScreen" aria-labelledby="setupTitle">
       <p class="eyebrow">Behavioral Assessment</p>
       <h1 id="setupTitle">Stroop Color-Word Test</h1>
-      <p class="lead">Isi data sesi sebelum memulai. Tes ini mempertahankan logika asli: latihan 6 trial, tes utama 36 trial (12 kongruen, 12 inkongruen, 12 netral).</p>
+      <p class="lead">Isi data sesi sebelum memulai. </p>
 
       <form id="setupForm" novalidate>
         <label for="pid">ID atau Nama Partisipan</label>
@@ -25,40 +25,36 @@
 
         <div class="grid-2">
           <div>
-            <label for="day">Hari ke-</label>
-            <input id="day" name="day" type="text" inputmode="numeric" pattern="[0-9]+" required placeholder="mis. 3">
+            <label for="dayDisplay">Tanggal</label>
+            <input id="dayDisplay" name="dayDisplay" type="text" readonly aria-readonly="true">
           </div>
           <div>
             <label for="session">Sesi</label>
             <select id="session" name="session" required>
-              <option value="Morning, before work">Pagi, sebelum bekerja</option>
-              <option value="Afternoon, before lunch">Siang, sebelum makan siang</option>
-              <option value="Afternoon, after lunch, about to back to work">Siang, setelah makan siang, akan kembali bekerja</option>
-              <option value="Mid-evening, around 15:00, before getting home">Sore, sekitar 15:00, sebelum pulang</option>
+              <option value="Morning, before work">Pagi, sesaat sebelum bekerja</option>
+              <option value="Afternoon, before lunch">Siang, sesaat sebelum istirahat</option>
+              <option value="Afternoon, after lunch, about to back to work">Siang, sesaat setelah istirahat</option>
+              <option value="Mid-evening, around 15:00, before getting home">Sore, sekitar 15:00</option>
             </select>
           </div>
         </div>
 
         <button class="btn btn-primary" type="submit">Lanjut ke Instruksi</button>
       </form>
-
-      <aside class="note" aria-label="Catatan administrasi">
-        <strong>Catatan administrasi:</strong> jalankan tes di tempat tenang, tanpa interupsi, dan gunakan waktu pengukuran yang konsisten untuk menjaga validitas hasil.
-      </aside>
     </section>
 
     <section class="panel hidden" id="instructionScreen" aria-labelledby="instructionTitle">
       <p class="eyebrow">Instruksi</p>
-      <h2 id="instructionTitle">Fokus pada warna cetak, bukan arti kata</h2>
+      <h2 id="instructionTitle">Fokus pada WARNA HURUF, bukan arti kata</h2>
       <p>
-        Anda akan melihat kata MERAH, BIRU, HIJAU, atau KUNING, dengan warna cetak acak.
-        Jawaban benar adalah <strong>warna cetak</strong>, bukan bacaan kata.
+        Anda akan melihat kata MERAH, BIRU, HIJAU, atau KUNING, dengan warna huruf acak.
+        Jawaban benar adalah <strong>warna huruf</strong>, bukan bacaan kata.
       </p>
       <p>
-        Contoh: kata "MERAH" yang dicetak biru dijawab dengan tombol <strong>BIRU</strong>.
+        Contoh: kata "MERAH" yang dicetak dengan warna BIRU dijawab dengan klik tombol <strong>BIRU</strong>.
         Jawab secepat dan seakurat mungkin.
       </p>
-      <p class="kbd-hint">Shortcut keyboard: <kbd>1</kbd> MERAH, <kbd>2</kbd> BIRU, <kbd>3</kbd> HIJAU, <kbd>4</kbd> KUNING.</p>
+      <!-- <p class="kbd-hint">Shortcut keyboard: <kbd>1</kbd> MERAH, <kbd>2</kbd> BIRU, <kbd>3</kbd> HIJAU, <kbd>4</kbd> KUNING.</p> -->
       <button class="btn btn-primary" id="startPracticeBtn" type="button">Mulai Latihan (6 Soal)</button>
     </section>
 
@@ -89,14 +85,15 @@
     <section class="panel hidden" id="practiceDoneScreen" aria-labelledby="practiceDoneTitle">
       <p class="eyebrow">Latihan selesai</p>
       <h2 id="practiceDoneTitle">Siap masuk tes utama</h2>
-      <p>Tes utama berisi 36 soal dan tetap menggunakan komposisi standar untuk kongruen, inkongruen, dan netral.</p>
+      <p>Tes utama berisi 36 soal</p>
       <button class="btn btn-primary" id="startMainBtn" type="button">Mulai Tes Utama</button>
     </section>
 
     <section class="panel hidden" id="vasScreen" aria-labelledby="vasTitle">
-      <p class="eyebrow">Langkah 1 dari 2</p>
+      <p class="eyebrow">Langkah 2 dari 2</p>
       <h2 id="vasTitle">Penilaian VAS Kelelahan</h2>
       <p class="lead">Seberapa lelah secara mental yang Anda rasakan saat ini?</p>
+      <p class="lead">Geser titik biru sesuai angka yang menggambarkan tingkat kelelahan Anda</p>
 
       <div class="vas-wrap">
         <input id="vasSlider" class="vas-slider" type="range" min="0" max="100" value="50" aria-label="Skor VAS kelelahan 0 sampai 100">
@@ -107,60 +104,26 @@
         <p class="vas-value"><strong id="vasValue">50</strong><span> / 100</span></p>
       </div>
 
-      <button class="btn btn-primary" id="submitVasBtn" type="button">Lanjut ke Kuesioner</button>
+      <button class="btn btn-primary" id="submitVasBtn" type="button">Lanjutkan</button>
     </section>
 
     <section class="panel hidden" id="questionnaireScreen" aria-labelledby="questionnaireTitle">
-      <p class="eyebrow">Langkah 2 dari 2</p>
       <h2 id="questionnaireTitle">Isi Kuesioner Tambahan</h2>
-      <p>Isi Google Form terlebih dahulu, lalu konfirmasi untuk melihat hasil Stroop.</p>
+      <p>Isi Google Form terlebih dahulu.</p>
 
       <div class="stack-actions">
-        <a class="btn btn-primary btn-link" href="https://forms.gle/Rnc3k6BBZ4dPnzCF7" target="_blank" rel="noopener noreferrer">Buka Kuesioner Stroop</a>
+        <a class="btn btn-primary btn-link" href="https://forms.gle/Rnc3k6BBZ4dPnzCF7" target="_blank" rel="noopener noreferrer">Buka Kuesioner Multitasking</a>
       </div>
 
-      <label class="check-wrap" for="formDoneCheck">
-        <input id="formDoneCheck" type="checkbox">
-        <span>Saya sudah mengisi Google Form.</span>
-      </label>
-
-      <button class="btn btn-secondary" id="showResultsBtn" type="button" disabled>Tampilkan Hasil</button>
+      <button class="btn btn-secondary" id="showResultsBtn" type="button">Selesai</button>
     </section>
 
     <section class="panel hidden" id="resultsScreen" aria-labelledby="resultsTitle">
-      <p class="eyebrow">Hasil</p>
-      <h2 id="resultsTitle">Ringkasan Performa</h2>
-      <p class="result-meta" id="resultMeta"></p>
-
-      <div class="stat-grid">
-        <article class="stat-box">
-          <p class="stat-label">Interference Score (ms)</p>
-          <p class="bigstat" id="interferenceScore">-</p>
-          <p class="mini">RT Inkongruen - RT Kongruen</p>
-        </article>
-        <article class="stat-box">
-          <p class="stat-label">Akurasi Keseluruhan</p>
-          <p class="bigstat" id="accuracyOverall">-</p>
-          <p class="mini">Jawaban benar pada tes utama</p>
-        </article>
-      </div>
-
-      <div class="table-wrap" role="region" aria-label="Tabel hasil per jenis trial" tabindex="0">
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">Jenis Trial</th>
-              <th scope="col">n</th>
-              <th scope="col">RT Rata-rata (ms)</th>
-              <th scope="col">Akurasi</th>
-            </tr>
-          </thead>
-          <tbody id="resultsTableBody"></tbody>
-        </table>
-      </div>
+      <p class="eyebrow">Selesai</p>
+      <h2 id="resultsTitle">Terima kasih</h2>
+      <p class="lead">Tes telah selesai. Data Anda sedang dikirim ke server.</p>
 
       <div class="stack-actions">
-        <button class="btn btn-primary" id="saveCsvBtn" type="button">Unduh Data CSV</button>
         <button class="btn btn-secondary" id="newSessionBtn" type="button">Mulai Sesi Baru</button>
       </div>
 

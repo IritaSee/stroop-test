@@ -8,6 +8,7 @@ const HEX = {
 
 const API_BASE = "/api";
 const FINAL_SESSION_LABEL = "Mid-evening, around 15:00, before getting home";
+const currentStudyDate = new Date();
 
 let pid = "";
 let day = "";
@@ -34,7 +35,7 @@ const el = {
   resultsScreen: document.getElementById("resultsScreen"),
   setupForm: document.getElementById("setupForm"),
   pidInput: document.getElementById("pid"),
-  dayInput: document.getElementById("day"),
+  dayDisplay: document.getElementById("dayDisplay"),
   sessionSelect: document.getElementById("session"),
   startPracticeBtn: document.getElementById("startPracticeBtn"),
   startMainBtn: document.getElementById("startMainBtn"),
@@ -43,31 +44,23 @@ const el = {
   fixation: document.getElementById("fixation"),
   stimulus: document.getElementById("stimulus"),
   trialStatus: document.getElementById("trialStatus"),
-  resultMeta: document.getElementById("resultMeta"),
-  interferenceScore: document.getElementById("interferenceScore"),
-  accuracyOverall: document.getElementById("accuracyOverall"),
-  resultsTableBody: document.getElementById("resultsTableBody"),
-  saveCsvBtn: document.getElementById("saveCsvBtn"),
   newSessionBtn: document.getElementById("newSessionBtn"),
   saveStatus: document.getElementById("saveStatus"),
   vasSlider: document.getElementById("vasSlider"),
   vasValue: document.getElementById("vasValue"),
   submitVasBtn: document.getElementById("submitVasBtn"),
-  formDoneCheck: document.getElementById("formDoneCheck"),
   showResultsBtn: document.getElementById("showResultsBtn"),
   choiceButtons: Array.from(document.querySelectorAll(".choiceBtn"))
 };
 
+initializeStudyDate();
+
 el.setupForm.addEventListener("submit", goInstructions);
 el.startPracticeBtn.addEventListener("click", startPractice);
 el.startMainBtn.addEventListener("click", startMain);
-el.saveCsvBtn.addEventListener("click", downloadCSV);
 el.newSessionBtn.addEventListener("click", () => window.location.reload());
 el.vasSlider.addEventListener("input", updateVASValue);
 el.submitVasBtn.addEventListener("click", submitVAS);
-el.formDoneCheck.addEventListener("change", () => {
-  el.showResultsBtn.disabled = !el.formDoneCheck.checked;
-});
 el.showResultsBtn.addEventListener("click", continueToResults);
 
 el.choiceButtons.forEach((button) => {
@@ -81,19 +74,29 @@ function goInstructions(event) {
 
   const formData = new FormData(el.setupForm);
   pid = String(formData.get("pid") || "").trim() || "ANON";
-  day = String(formData.get("day") || "").trim() || "0";
+  day = formatStudyDateForBackend(currentStudyDate);
   session = String(formData.get("session") || "").trim() || "Pagi";
-
-  const dayNumber = Number(day);
-  if (!Number.isFinite(dayNumber) || dayNumber < 0 || !/^\d+$/.test(day)) {
-    el.dayInput.setCustomValidity("Hari ke- harus berupa angka nol atau lebih.");
-    el.dayInput.reportValidity();
-    return;
-  }
-
-  el.dayInput.setCustomValidity("");
   switchScreen(el.setupScreen, el.instructionScreen);
   el.startPracticeBtn.focus();
+}
+
+function initializeStudyDate() {
+  el.dayDisplay.value = formatStudyDateForDisplay(currentStudyDate);
+}
+
+function formatStudyDateForDisplay(date) {
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  }).format(date);
+}
+
+function formatStudyDateForBackend(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const dayOfMonth = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${dayOfMonth}`;
 }
 
 function buildTrials(n) {
@@ -287,8 +290,6 @@ function updateVASValue() {
 function submitVAS() {
   if (isFinalSessionOfDay()) {
     switchScreen(el.vasScreen, el.questionnaireScreen);
-    el.formDoneCheck.checked = false;
-    el.showResultsBtn.disabled = true;
     return;
   }
 
@@ -313,12 +314,7 @@ function finalizeAndShowResults(fromScreen) {
     vasFatigueScore
   };
 
-  el.interferenceScore.textContent =
-    summaryForExport.interference !== null ? `${summaryForExport.interference} ms` : "n/a";
-  el.accuracyOverall.textContent = `${summaryForExport.overallAcc}%`;
-  el.resultMeta.textContent = `Partisipan: ${pid} | Hari ke-${day} | Sesi: ${session}`;
-
-  renderSummaryTable(summaryForExport.summary);
+  el.saveStatus.textContent = "Menyimpan hasil ke server...";
   switchScreen(fromScreen, el.resultsScreen);
 
   void saveResultsToBackend(summaryForExport);
@@ -328,79 +324,7 @@ function isFinalSessionOfDay() {
   return session === FINAL_SESSION_LABEL;
 }
 
-function renderSummaryTable(summary) {
-  const labelMap = {
-    congruent: "Kongruen",
-    incongruent: "Inkongruen",
-    neutral: "Netral"
-  };
-
-  el.resultsTableBody.innerHTML = "";
-
-  for (const type of ["congruent", "incongruent", "neutral"]) {
-    const row = summary[type];
-    const tr = document.createElement("tr");
-
-    tr.innerHTML = `
-      <td>${labelMap[type]}</td>
-      <td>${row.n}</td>
-      <td>${row.meanRT ?? "n/a"}</td>
-      <td>${row.acc ?? "n/a"}%</td>
-    `;
-
-    el.resultsTableBody.appendChild(tr);
-  }
-}
-
-function downloadCSV() {
-  if (!summaryForExport) {
-    return;
-  }
-
-  let csv = "pid,day,session,phase,trialNum,type,word,printColor,response,rt_ms,correct\n";
-
-  for (const row of results) {
-    csv += [
-      pid,
-      day,
-      session,
-      row.phase,
-      row.trialNum,
-      row.type,
-      row.word,
-      row.printColor,
-      row.response,
-      row.rt ?? "",
-      row.correct
-    ].join(",") + "\n";
-  }
-
-  csv += "\nSUMMARY,,,,,,,,,,\n";
-  csv += "type,n,meanRT_ms,accuracy_pct\n";
-
-  for (const type of Object.keys(summaryForExport.summary)) {
-    const item = summaryForExport.summary[type];
-    csv += [type, item.n, item.meanRT ?? "", item.acc ?? ""].join(",") + "\n";
-  }
-
-  csv += `\nInterferenceScore_ms,${summaryForExport.interference ?? ""}\n`;
-  csv += `OverallAccuracy_pct,${summaryForExport.overallAcc}\n`;
-  csv += `VASFatigueScore_0_100,${summaryForExport.vasFatigueScore}\n`;
-
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = `Stroop_${pid}_hari${day}_${session}.csv`;
-  document.body.appendChild(anchor);
-  anchor.click();
-  document.body.removeChild(anchor);
-  URL.revokeObjectURL(url);
-}
-
 async function saveResultsToBackend(payload) {
-  el.saveStatus.textContent = "Menyimpan hasil ke server...";
-
   try {
     const response = await fetch(`${API_BASE}/results`, {
       method: "POST",
