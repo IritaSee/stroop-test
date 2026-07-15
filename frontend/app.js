@@ -7,12 +7,13 @@ const HEX = {
 };
 
 const API_BASE = "/api";
-const FINAL_SESSION_LABEL = "Mid-evening, around 15:00, before getting home";
+const FINAL_SESSION_CODE = "mid_evening";
 const currentStudyDate = new Date();
 
 let pid = "";
 let day = "";
 let session = "";
+let sessionDisplay = "";
 
 let trialList = [];
 let currentTrialIndex = 0;
@@ -44,6 +45,7 @@ const el = {
   fixation: document.getElementById("fixation"),
   stimulus: document.getElementById("stimulus"),
   trialStatus: document.getElementById("trialStatus"),
+  saveCsvBtn: document.getElementById("saveCsvBtn"),
   newSessionBtn: document.getElementById("newSessionBtn"),
   saveStatus: document.getElementById("saveStatus"),
   vasSlider: document.getElementById("vasSlider"),
@@ -58,6 +60,7 @@ initializeStudyDate();
 el.setupForm.addEventListener("submit", goInstructions);
 el.startPracticeBtn.addEventListener("click", startPractice);
 el.startMainBtn.addEventListener("click", startMain);
+el.saveCsvBtn.addEventListener("click", downloadCSV);
 el.newSessionBtn.addEventListener("click", () => window.location.reload());
 el.vasSlider.addEventListener("input", updateVASValue);
 el.submitVasBtn.addEventListener("click", submitVAS);
@@ -75,7 +78,8 @@ function goInstructions(event) {
   const formData = new FormData(el.setupForm);
   pid = String(formData.get("pid") || "").trim() || "ANON";
   day = formatStudyDateForBackend(currentStudyDate);
-  session = String(formData.get("session") || "").trim() || "Pagi";
+  session = String(formData.get("session") || "").trim() || "morning_before_work";
+  sessionDisplay = el.sessionSelect.selectedOptions[0]?.textContent?.trim() || "Pagi, sesaat sebelum bekerja";
   switchScreen(el.setupScreen, el.instructionScreen);
   el.startPracticeBtn.focus();
 }
@@ -274,6 +278,7 @@ function buildSummaryPayload() {
     pid,
     day,
     session,
+    sessionDisplay,
     summary,
     interference,
     overallAcc,
@@ -321,7 +326,53 @@ function finalizeAndShowResults(fromScreen) {
 }
 
 function isFinalSessionOfDay() {
-  return session === FINAL_SESSION_LABEL;
+  return session === FINAL_SESSION_CODE;
+}
+
+function downloadCSV() {
+  if (!summaryForExport) {
+    return;
+  }
+
+  let csv = "pid,study_date,session,phase,trialNum,type,word,printColor,response,rt_ms,correct\n";
+
+  for (const row of results) {
+    csv += [
+      pid,
+      day,
+      sessionDisplay,
+      row.phase,
+      row.trialNum,
+      row.type,
+      row.word,
+      row.printColor,
+      row.response,
+      row.rt ?? "",
+      row.correct
+    ].join(",") + "\n";
+  }
+
+  csv += "\nSUMMARY,,,,,,,,,,\n";
+  csv += "type,n,meanRT_ms,accuracy_pct\n";
+
+  for (const type of Object.keys(summaryForExport.summary)) {
+    const item = summaryForExport.summary[type];
+    csv += [type, item.n, item.meanRT ?? "", item.acc ?? ""].join(",") + "\n";
+  }
+
+  csv += `\nInterferenceScore_ms,${summaryForExport.interference ?? ""}\n`;
+  csv += `OverallAccuracy_pct,${summaryForExport.overallAcc}\n`;
+  csv += `VASFatigueScore_0_100,${summaryForExport.vasFatigueScore}\n`;
+
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `Stroop_${pid}_${day}_${session}.csv`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
 }
 
 async function saveResultsToBackend(payload) {
